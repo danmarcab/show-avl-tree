@@ -3,14 +3,16 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
-import StepAVLTree exposing (..)
+import AVLTree exposing (..)
+import StepByStepAVLTree exposing (Step(..))
 import Time exposing (Time)
+import TreeVisualization
 
 
 type alias Model =
     { tree : Tree Int Int
     , elem : String
-    , steps : List (StepAVLTree.Msg Int Int)
+    , steps : List (Step Int Int)
     , autorun : Bool
     }
 
@@ -30,7 +32,7 @@ init =
 
 initialTree : Tree Int Int
 initialTree =
-    StepAVLTree.fromList [ ( 5, 5 ), ( 4, 4 ), ( 6, 6 ), ( 1, 1 ), ( 2, 2 ), ( 10, 10 ), ( 7, 7 ), ( 8, 8 ), ( 3, 3 ) ]
+    AVLTree.fromList (List.map (\n -> ( n, n )) <| List.range 1 7)
 
 
 main =
@@ -48,7 +50,7 @@ update msg model =
                 newModel =
                     case String.toInt model.elem of
                         Ok val ->
-                            { model | tree = StepAVLTree.insert model.tree val val, elem = "" }
+                            { model | tree = AVLTree.insert val val model.tree, elem = "" }
 
                         Err _ ->
                             { model | elem = "" }
@@ -87,7 +89,7 @@ update msg model =
                 step :: steps ->
                     let
                         ( newTree, nextSteps ) =
-                            StepAVLTree.update step model.tree
+                            StepByStepAVLTree.applyStep step model.tree
 
                         newSteps =
                             steps ++ nextSteps
@@ -107,7 +109,9 @@ view : Model -> Html Msg
 view model =
     div
         []
-        [ menuView model, treeTopView model.steps model.tree ]
+        [ menuView model
+        , treeView model.steps model.tree
+        ]
 
 
 menuView : Model -> Html Msg
@@ -128,83 +132,6 @@ menuView model =
                 ]
 
 
-treeTopView : List (StepAVLTree.Msg Int Int) -> Tree Int Int -> Html Msg
-treeTopView steps tree =
-    let
-        step =
-            case steps of
-                [] ->
-                    Nothing
-
-                step :: rest ->
-                    Just step
-    in
-        div [ class "tree" ]
-            [ ul []
-                [ li [] (treeView step tree) ]
-            ]
-
-
-treeView : Maybe (StepAVLTree.Msg Int Int) -> Tree Int Int -> List (Html Msg)
-treeView maybeStep tree =
-    let
-        (node_key, nodeClass) =
-            case maybeStep of
-                Nothing ->
-                    (-1, "")
-
-                Just (CheckInsert nodeKey key value) ->
-                    (nodeKey, "check-node")
-
-                Just (CheckBalance nodeKey) ->
-                    (nodeKey, "check-node")
-
-                Just (ChangeValue nodeKey value) ->
-                    (nodeKey, "check-node")
-
-                Just (InsertLeft nodeKey key value) ->
-                    (nodeKey, "insert-left")
-
-                Just (InsertRight nodeKey key value) ->
-                    (nodeKey, "insert-right")
-
-                Just (RotateLeft nodeKey) ->
-                    (nodeKey, "insert-left")
-
-                Just (RotateRight nodeKey) ->
-                    (nodeKey, "insert-right")
-
-                Just _ ->
-                    (-1, "")
-    in
-        case tree of
-            EmptyNode ->
-                [ div [] [ text "-" ] ]
-
-            TreeNode node ->
-                [ div [classList [(nodeClass, node.key == node_key)]]
-                    [ span [] [ text ("key: " ++ (toString node.key)) ]
-                    , br [] []
-                    , span [] [ text ("h: " ++ (toString node.height)) ]
-                    , br [] []
-                    , span [] [ text ("bal: " ++ (toString (StepAVLTree.getBalance tree))) ]
-                    ]
-                , ul
-                    []
-                    [ li [] (treeView maybeStep node.left)
-                    , li [] (treeView maybeStep node.right)
-                    ]
-                ]
-
-
-
---    = StartInsert comparable v
---    | InsertRoot comparable v
---    | CheckInsert comparable comparable v
---    | ChangeValue comparable v
---    | InsertLeft comparable comparable v
---    | InsertRight comparable comparable v
---    | CheckBalance comparable
---    | RotateLeft comparable
---    | RotateRight comparable
---    | Error String
+treeView : List (Step Int Int) -> Tree Int Int -> Html Msg
+treeView steps tree =
+    TreeVisualization.view (List.head steps) tree
