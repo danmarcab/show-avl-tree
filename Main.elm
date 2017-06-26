@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import AVLTree exposing (..)
+import Random
 import StepByStepAVLTree exposing (Step(..))
 import Time exposing (Time)
 import TreeVisualization
@@ -23,6 +24,10 @@ type Msg
     | AutoStepInsert
     | Step
     | UpdateElem String
+    | ResetToEmpty
+    | ResetToRange Int
+    | ResetToRandom Int
+    | InitRandomTree (List Int)
 
 
 init : ( Model, Cmd Msg )
@@ -96,6 +101,40 @@ update msg model =
                     in
                         ( { model | tree = newTree, steps = newSteps, elem = "" }, Cmd.none )
 
+        ResetToEmpty ->
+            ( { tree = AVLTree.empty
+              , elem = ""
+              , steps = []
+              , autorun = False
+              }
+            , Cmd.none
+            )
+
+        ResetToRange num ->
+            ( { tree = AVLTree.fromList (List.map (\n -> ( n, n )) <| List.range 1 num)
+              , elem = ""
+              , steps = []
+              , autorun = False
+              }
+            , Cmd.none
+            )
+
+        ResetToRandom num ->
+            ( { tree = AVLTree.empty
+              , elem = ""
+              , steps = []
+              , autorun = False
+              }
+            , Random.generate InitRandomTree (Random.list num <| Random.int -100 100)
+            )
+
+        InitRandomTree list ->
+            ( { model
+                | tree = AVLTree.fromList (List.map (\n -> ( n, n )) list)
+              }
+            , Cmd.none
+            )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions { autorun } =
@@ -108,28 +147,154 @@ subscriptions { autorun } =
 view : Model -> Html Msg
 view model =
     div
-        []
+        [ class "container" ]
         [ menuView model
+        , div [ style [ ( "clear", "both" ) ] ] []
         , treeView model.steps model.tree
         ]
 
 
 menuView : Model -> Html Msg
 menuView model =
-    case model.steps of
-        [] ->
-            div []
-                [ input [ onInput UpdateElem, value model.elem ] []
-                , button [ onClick Insert ] [ text "Quick Insert" ]
-                , button [ onClick StepInsert ] [ text "Manual Step by Step Insert" ]
-                , button [ onClick AutoStepInsert ] [ text "Auto Step by Step Insert" ]
-                ]
+    header [ class "row" ]
+        [ resetView model
+        , actionsView model
+        , stepView model
+        ]
 
-        step :: steps ->
-            div []
-                [ text ("Next Step " ++ (toString step))
-                , button [ onClick Step ] [ text "Advance One Step" ]
+
+resetView : Model -> Html Msg
+resetView model =
+    let
+        buttonEnabled =
+            List.isEmpty model.steps
+
+        resetButton toMsg title =
+            button
+                [ type_ "button", onClick toMsg, disabled <| not buttonEnabled, class "dropdown-item" ]
+                [ text title ]
+    in
+        div [ class "col-3" ]
+            [ h4 [] [ text "Reset the tree" ]
+            , div [ class "dropdown" ]
+                [ button
+                    [ type_ "button"
+                    , disabled <| not buttonEnabled
+                    , class "btn btn-warning dropdown-toggle"
+                    , attribute "data-toggle" "dropdown"
+                    ]
+                    [ text "Reset to ..." ]
+                , div [ class "dropdown-menu" ]
+                    [ resetButton ResetToEmpty "Empty"
+                    , resetButton (ResetToRange 7) "Range: 1 - 7"
+                    , resetButton (ResetToRange 15) "Range: 1 - 15"
+                    , resetButton (ResetToRandom 7) "7 random values"
+                    , resetButton (ResetToRandom 15) "15 random values"
+                    ]
                 ]
+            ]
+
+
+actionsView : Model -> Html Msg
+actionsView model =
+    let
+        inputsDisabled =
+            not <| List.isEmpty model.steps
+
+        invalidElem =
+            (model.elem == "-")
+                || (model.elem == "+")
+                || case String.toInt model.elem of
+                    Ok val ->
+                        False
+
+                    Err _ ->
+                        True
+
+        buttonsDisabled =
+            inputsDisabled || invalidElem
+
+        actionButton toMsg title =
+            span [ class "input-group-btn" ]
+                [ button [ type_ "button", class "btn btn-primary btn-sm", onClick toMsg, disabled buttonsDisabled ]
+                    [ text title ]
+                ]
+    in
+        div [ class "col-4" ]
+            [ h4 [] [ text "Insert" ]
+            , div [ class "input-group" ]
+                [ input [ class "form-control", onInput UpdateElem, disabled inputsDisabled, value model.elem ] []
+                , actionButton StepInsert "Step by Step"
+                , actionButton AutoStepInsert "Auto"
+                , actionButton Insert "Quick"
+                ]
+            , h4 [] [ text "Delete" ]
+            , p [] [ text "Coming soon..." ]
+            ]
+
+
+stepView : Model -> Html Msg
+stepView model =
+    let
+        content =
+            case List.head model.steps of
+                Nothing ->
+                    [ text "Nothing to explain. Please start a 'Step by Step' or 'Auto' insert"
+                    ]
+
+                Just step ->
+                    [ p [] [ text <| explainStep step ]
+                    , button [ onClick Step ] [ text "Next Step" ]
+                    ]
+    in
+        div [ class "col" ]
+            ([ h4 [] [ text "Explanation" ] ] ++ content)
+
+
+explainStep : Step Int Int -> String
+explainStep step =
+    case step of
+        StartInsert key val ->
+            "We are going to insert " ++ toString key ++ " in the tree. We'll start from the root."
+
+        InsertRoot key val ->
+            "The tree is empty, so We are going to make " ++ toString key ++ " the root of the tree."
+
+        CheckInsert nodeKey key val ->
+            if key > nodeKey then
+                toString key ++ " is greater than " ++ toString nodeKey ++ ". We need to check the right subtree."
+            else if key > nodeKey then
+                toString key ++ " is less than " ++ toString nodeKey ++ ". We need to check the left subtree."
+            else
+                toString key ++ " is equal to " ++ toString nodeKey ++ ". We found the node."
+
+        ChangeValue key val ->
+            "We'll change the value to " ++ toString val ++ "."
+
+        InsertLeft nodeKey key val ->
+            "The left subtree was empty, we'll insert " ++ toString key ++ " there."
+
+        InsertRight nodeKey key val ->
+            "The right subtree was empty, we'll insert " ++ toString key ++ " there."
+
+        CheckBalance key ->
+            "We check the balance of the subtree."
+
+        RotateLeft key ->
+            "The subtree is not balanced, we rotate to the left."
+
+        RotateRight key ->
+            "The subtree is not balanced, we rotate to the right."
+
+        Error string ->
+            "An error ocurred: " ++ string
+
+
+
+--    | CheckBalance comparable
+--    | RotateLeft comparable
+--    | RotateRight comparable
+--    | Error String
 
 
 treeView : List (Step Int Int) -> Tree Int Int -> Html Msg
