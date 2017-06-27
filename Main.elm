@@ -11,6 +11,9 @@ import TreeVisualization
 import Ports
 
 
+-- MODEL --
+
+
 type alias Model =
     { tree : Tree Int Int
     , elem : String
@@ -18,6 +21,24 @@ type alias Model =
     , autorun : Bool
     , size : ( Int, Int )
     }
+
+
+init : ( Model, Cmd Msg )
+init =
+    ( { tree = initialTree, elem = "", steps = [], autorun = False, size = ( 600, 400 ) }, Ports.initSizeInfo () )
+
+
+main =
+    program { init = init, view = view, update = update, subscriptions = subscriptions }
+
+
+initialTree : Tree Int Int
+initialTree =
+    treeFromList <| List.range 1 7
+
+
+
+-- UPDATE --
 
 
 type Msg
@@ -33,20 +54,6 @@ type Msg
     | Size ( Int, Int )
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( { tree = initialTree, elem = "", steps = [], autorun = False, size = ( 600, 400 ) }, Ports.initSizeInfo () )
-
-
-initialTree : Tree Int Int
-initialTree =
-    AVLTree.fromList (List.map (\n -> ( n, n )) <| List.range 1 7)
-
-
-main =
-    program { init = init, view = view, update = update, subscriptions = subscriptions }
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -55,94 +62,80 @@ update msg model =
 
         Insert ->
             let
-                newModel =
-                    case String.toInt model.elem of
-                        Ok val ->
-                            { model | tree = AVLTree.insert val val model.tree, elem = "" }
-
-                        Err _ ->
-                            { model | elem = "" }
+                updater val mod =
+                    { mod | tree = AVLTree.insert val val mod.tree }
             in
-                ( newModel, Cmd.none )
+                ( updateIfValidElem updater model, Cmd.none )
 
         StepInsert ->
             let
-                newModel =
-                    case String.toInt model.elem of
-                        Ok val ->
-                            { model | steps = [ StartInsert val val ] }
-
-                        Err _ ->
-                            { model | elem = "" }
+                updater val mod =
+                    { mod | steps = [ StartInsert val val ] }
             in
-                ( newModel, Cmd.none )
+                ( updateIfValidElem updater model, Cmd.none )
 
         AutoStepInsert ->
             let
-                newModel =
-                    case String.toInt model.elem of
-                        Ok val ->
-                            { model | steps = [ StartInsert val val ] }
-
-                        Err _ ->
-                            { model | elem = "" }
+                updater val mod =
+                    { mod | steps = [ StartInsert val val ], autorun = True }
             in
-                ( { newModel | autorun = True }, Cmd.none )
+                ( updateIfValidElem updater model, Cmd.none )
 
         Step ->
             case model.steps of
                 [] ->
                     ( { model | autorun = False }, Cmd.none )
 
-                step :: steps ->
+                step :: nextSteps ->
                     let
-                        ( newTree, nextSteps ) =
+                        ( newTree, additionalSteps ) =
                             StepByStepAVLTree.applyStep step model.tree
-
-                        newSteps =
-                            steps ++ nextSteps
                     in
-                        ( { model | tree = newTree, steps = newSteps, elem = "" }, Cmd.none )
+                        ( { model | tree = newTree, steps = nextSteps ++ additionalSteps }, Cmd.none )
 
         ResetToEmpty ->
-            ( { tree = AVLTree.empty
-              , elem = ""
-              , steps = []
-              , autorun = False
-              , size = model.size
-              }
-            , Cmd.none
-            )
+            ( resetModelwithTree model AVLTree.empty, Cmd.none )
 
         ResetToRange num ->
-            ( { tree = AVLTree.fromList (List.map (\n -> ( n, n )) <| List.range 1 num)
-              , elem = ""
-              , steps = []
-              , autorun = False
-              , size = model.size
-              }
-            , Cmd.none
-            )
+            ( resetModelwithTree model <| treeFromList <| List.range 1 num, Cmd.none )
 
         ResetToRandom num ->
-            ( { tree = AVLTree.empty
-              , elem = ""
-              , steps = []
-              , autorun = False
-              , size = model.size
-              }
-            , Random.generate InitRandomTree (Random.list num <| Random.int -100 100)
-            )
+            ( resetModelwithTree model AVLTree.empty, Random.generate InitRandomTree (Random.list num <| Random.int -100 100) )
 
         InitRandomTree list ->
-            ( { model
-                | tree = AVLTree.fromList (List.map (\n -> ( n, n )) list)
-              }
-            , Cmd.none
-            )
+            ( resetModelwithTree model <| treeFromList list, Cmd.none )
 
         Size size ->
             ( { model | size = size }, Cmd.none )
+
+
+updateIfValidElem : (Int -> Model -> Model) -> Model -> Model
+updateIfValidElem fun model =
+    case String.toInt model.elem of
+        Ok val ->
+            fun val { model | elem = "" }
+
+        Err _ ->
+            { model | elem = "" }
+
+
+resetModelwithTree : Model -> Tree Int Int -> Model
+resetModelwithTree model newTree =
+    { model
+        | tree = newTree
+        , elem = ""
+        , steps = []
+        , autorun = False
+    }
+
+
+treeFromList : List Int -> Tree Int Int
+treeFromList list =
+    AVLTree.fromList (List.map (\n -> ( n, n )) list)
+
+
+
+-- SUBSCRIPTIONS --
 
 
 subscriptions : Model -> Sub Msg
@@ -154,6 +147,10 @@ subscriptions { autorun } =
             Sub.none
         , Ports.size Size
         ]
+
+
+
+-- VIEW --
 
 
 view : Model -> Html Msg
@@ -215,6 +212,7 @@ actionsView model =
             not <| List.isEmpty model.steps
 
         invalidElem =
+            -- TODO: Remove once new version of core released: https://github.com/elm-lang/core/pull/834
             (model.elem == "-")
                 || (model.elem == "+")
                 || case String.toInt model.elem of

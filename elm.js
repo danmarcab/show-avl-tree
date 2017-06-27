@@ -11063,13 +11063,13 @@ var _user$project$TreeVisualization$view = F3(
 				_0: _elm_lang$svg$Svg_Attributes$width('100%'),
 				_1: {
 					ctor: '::',
-					_0: _elm_lang$svg$Svg_Attributes$height('100%'),
+					_0: _elm_lang$svg$Svg_Attributes$height('600'),
 					_1: {
 						ctor: '::',
 						_0: _elm_lang$svg$Svg_Attributes$viewBox(vBox),
 						_1: {
 							ctor: '::',
-							_0: _elm_lang$svg$Svg_Attributes$preserveAspectRatio('xMinYMin meet'),
+							_0: _elm_lang$svg$Svg_Attributes$preserveAspectRatio('xMidYMid meet'),
 							_1: {ctor: '[]'}
 						}
 					}
@@ -11199,13 +11199,44 @@ var _user$project$Main$explainStep = function (step) {
 			return A2(_elm_lang$core$Basics_ops['++'], 'An error ocurred: ', _p0._0);
 	}
 };
-var _user$project$Main$initialTree = _user$project$AVLTree$fromList(
-	A2(
-		_elm_lang$core$List$map,
-		function (n) {
-			return {ctor: '_Tuple2', _0: n, _1: n};
-		},
-		A2(_elm_lang$core$List$range, 1, 7)));
+var _user$project$Main$treeFromList = function (list) {
+	return _user$project$AVLTree$fromList(
+		A2(
+			_elm_lang$core$List$map,
+			function (n) {
+				return {ctor: '_Tuple2', _0: n, _1: n};
+			},
+			list));
+};
+var _user$project$Main$resetModelwithTree = F2(
+	function (model, newTree) {
+		return _elm_lang$core$Native_Utils.update(
+			model,
+			{
+				tree: newTree,
+				elem: '',
+				steps: {ctor: '[]'},
+				autorun: false
+			});
+	});
+var _user$project$Main$updateIfValidElem = F2(
+	function (fun, model) {
+		var _p3 = _elm_lang$core$String$toInt(model.elem);
+		if (_p3.ctor === 'Ok') {
+			return A2(
+				fun,
+				_p3._0,
+				_elm_lang$core$Native_Utils.update(
+					model,
+					{elem: ''}));
+		} else {
+			return _elm_lang$core$Native_Utils.update(
+				model,
+				{elem: ''});
+		}
+	});
+var _user$project$Main$initialTree = _user$project$Main$treeFromList(
+	A2(_elm_lang$core$List$range, 1, 7));
 var _user$project$Main$init = {
 	ctor: '_Tuple2',
 	_0: {
@@ -11230,85 +11261,70 @@ var _user$project$Main$InitRandomTree = function (a) {
 };
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		var _p3 = msg;
-		switch (_p3.ctor) {
+		var _p4 = msg;
+		switch (_p4.ctor) {
 			case 'UpdateElem':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{elem: _p3._0}),
+						{elem: _p4._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'Insert':
-				var newModel = function () {
-					var _p4 = _elm_lang$core$String$toInt(model.elem);
-					if (_p4.ctor === 'Ok') {
-						var _p5 = _p4._0;
+				var updater = F2(
+					function (val, mod) {
 						return _elm_lang$core$Native_Utils.update(
-							model,
+							mod,
 							{
-								tree: A3(_user$project$AVLTree$insert, _p5, _p5, model.tree),
-								elem: ''
+								tree: A3(_user$project$AVLTree$insert, val, val, mod.tree)
 							});
-					} else {
-						return _elm_lang$core$Native_Utils.update(
-							model,
-							{elem: ''});
-					}
-				}();
-				return {ctor: '_Tuple2', _0: newModel, _1: _elm_lang$core$Platform_Cmd$none};
-			case 'StepInsert':
-				var newModel = function () {
-					var _p6 = _elm_lang$core$String$toInt(model.elem);
-					if (_p6.ctor === 'Ok') {
-						var _p7 = _p6._0;
-						return _elm_lang$core$Native_Utils.update(
-							model,
-							{
-								steps: {
-									ctor: '::',
-									_0: A2(_user$project$StepByStepAVLTree$StartInsert, _p7, _p7),
-									_1: {ctor: '[]'}
-								}
-							});
-					} else {
-						return _elm_lang$core$Native_Utils.update(
-							model,
-							{elem: ''});
-					}
-				}();
-				return {ctor: '_Tuple2', _0: newModel, _1: _elm_lang$core$Platform_Cmd$none};
-			case 'AutoStepInsert':
-				var newModel = function () {
-					var _p8 = _elm_lang$core$String$toInt(model.elem);
-					if (_p8.ctor === 'Ok') {
-						var _p9 = _p8._0;
-						return _elm_lang$core$Native_Utils.update(
-							model,
-							{
-								steps: {
-									ctor: '::',
-									_0: A2(_user$project$StepByStepAVLTree$StartInsert, _p9, _p9),
-									_1: {ctor: '[]'}
-								}
-							});
-					} else {
-						return _elm_lang$core$Native_Utils.update(
-							model,
-							{elem: ''});
-					}
-				}();
+					});
 				return {
 					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						newModel,
-						{autorun: true}),
+					_0: A2(_user$project$Main$updateIfValidElem, updater, model),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'StepInsert':
+				var updater = F2(
+					function (val, mod) {
+						return _elm_lang$core$Native_Utils.update(
+							mod,
+							{
+								steps: {
+									ctor: '::',
+									_0: A2(_user$project$StepByStepAVLTree$StartInsert, val, val),
+									_1: {ctor: '[]'}
+								}
+							});
+					});
+				return {
+					ctor: '_Tuple2',
+					_0: A2(_user$project$Main$updateIfValidElem, updater, model),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'AutoStepInsert':
+				var updater = F2(
+					function (val, mod) {
+						return _elm_lang$core$Native_Utils.update(
+							mod,
+							{
+								steps: {
+									ctor: '::',
+									_0: A2(_user$project$StepByStepAVLTree$StartInsert, val, val),
+									_1: {ctor: '[]'}
+								},
+								autorun: true
+							});
+					});
+				return {
+					ctor: '_Tuple2',
+					_0: A2(_user$project$Main$updateIfValidElem, updater, model),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'Step':
-				var _p10 = model.steps;
-				if (_p10.ctor === '[]') {
+				var _p5 = model.steps;
+				if (_p5.ctor === '[]') {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
@@ -11317,80 +11333,55 @@ var _user$project$Main$update = F2(
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
-					var _p11 = A2(_user$project$StepByStepAVLTree$applyStep, _p10._0, model.tree);
-					var newTree = _p11._0;
-					var nextSteps = _p11._1;
-					var newSteps = A2(_elm_lang$core$Basics_ops['++'], _p10._1, nextSteps);
+					var _p6 = A2(_user$project$StepByStepAVLTree$applyStep, _p5._0, model.tree);
+					var newTree = _p6._0;
+					var additionalSteps = _p6._1;
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
-							{tree: newTree, steps: newSteps, elem: ''}),
+							{
+								tree: newTree,
+								steps: A2(_elm_lang$core$Basics_ops['++'], _p5._1, additionalSteps)
+							}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				}
 			case 'ResetToEmpty':
 				return {
 					ctor: '_Tuple2',
-					_0: {
-						tree: _user$project$AVLTree$empty,
-						elem: '',
-						steps: {ctor: '[]'},
-						autorun: false,
-						size: model.size
-					},
+					_0: A2(_user$project$Main$resetModelwithTree, model, _user$project$AVLTree$empty),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'ResetToRange':
 				return {
 					ctor: '_Tuple2',
-					_0: {
-						tree: _user$project$AVLTree$fromList(
-							A2(
-								_elm_lang$core$List$map,
-								function (n) {
-									return {ctor: '_Tuple2', _0: n, _1: n};
-								},
-								A2(_elm_lang$core$List$range, 1, _p3._0))),
-						elem: '',
-						steps: {ctor: '[]'},
-						autorun: false,
-						size: model.size
-					},
+					_0: A2(
+						_user$project$Main$resetModelwithTree,
+						model,
+						_user$project$Main$treeFromList(
+							A2(_elm_lang$core$List$range, 1, _p4._0))),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'ResetToRandom':
 				return {
 					ctor: '_Tuple2',
-					_0: {
-						tree: _user$project$AVLTree$empty,
-						elem: '',
-						steps: {ctor: '[]'},
-						autorun: false,
-						size: model.size
-					},
+					_0: A2(_user$project$Main$resetModelwithTree, model, _user$project$AVLTree$empty),
 					_1: A2(
 						_elm_lang$core$Random$generate,
 						_user$project$Main$InitRandomTree,
 						A2(
 							_elm_lang$core$Random$list,
-							_p3._0,
+							_p4._0,
 							A2(_elm_lang$core$Random$int, -100, 100)))
 				};
 			case 'InitRandomTree':
 				return {
 					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
+					_0: A2(
+						_user$project$Main$resetModelwithTree,
 						model,
-						{
-							tree: _user$project$AVLTree$fromList(
-								A2(
-									_elm_lang$core$List$map,
-									function (n) {
-										return {ctor: '_Tuple2', _0: n, _1: n};
-									},
-									_p3._0))
-						}),
+						_user$project$Main$treeFromList(_p4._0)),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			default:
@@ -11398,7 +11389,7 @@ var _user$project$Main$update = F2(
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{size: _p3._0}),
+						{size: _p4._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 		}
@@ -11551,12 +11542,12 @@ var _user$project$Main$UpdateElem = function (a) {
 	return {ctor: 'UpdateElem', _0: a};
 };
 var _user$project$Main$Step = {ctor: 'Step'};
-var _user$project$Main$subscriptions = function (_p12) {
-	var _p13 = _p12;
+var _user$project$Main$subscriptions = function (_p7) {
+	var _p8 = _p7;
 	return _elm_lang$core$Platform_Sub$batch(
 		{
 			ctor: '::',
-			_0: _p13.autorun ? A2(
+			_0: _p8.autorun ? A2(
 				_elm_lang$core$Time$every,
 				1 * _elm_lang$core$Time$second,
 				_elm_lang$core$Basics$always(_user$project$Main$Step)) : _elm_lang$core$Platform_Sub$none,
@@ -11569,8 +11560,8 @@ var _user$project$Main$subscriptions = function (_p12) {
 };
 var _user$project$Main$stepView = function (model) {
 	var content = function () {
-		var _p14 = _elm_lang$core$List$head(model.steps);
-		if (_p14.ctor === 'Nothing') {
+		var _p9 = _elm_lang$core$List$head(model.steps);
+		if (_p9.ctor === 'Nothing') {
 			return {
 				ctor: '::',
 				_0: _elm_lang$html$Html$text('Nothing to explain. Please start a \'Step by Step\' or \'Auto\' insert'),
@@ -11585,7 +11576,7 @@ var _user$project$Main$stepView = function (model) {
 					{
 						ctor: '::',
 						_0: _elm_lang$html$Html$text(
-							_user$project$Main$explainStep(_p14._0)),
+							_user$project$Main$explainStep(_p9._0)),
 						_1: {ctor: '[]'}
 					}),
 				_1: {
@@ -11635,8 +11626,8 @@ var _user$project$Main$StepInsert = {ctor: 'StepInsert'};
 var _user$project$Main$Insert = {ctor: 'Insert'};
 var _user$project$Main$actionsView = function (model) {
 	var invalidElem = _elm_lang$core$Native_Utils.eq(model.elem, '-') || (_elm_lang$core$Native_Utils.eq(model.elem, '+') || function () {
-		var _p15 = _elm_lang$core$String$toInt(model.elem);
-		if (_p15.ctor === 'Ok') {
+		var _p10 = _elm_lang$core$String$toInt(model.elem);
+		if (_p10.ctor === 'Ok') {
 			return false;
 		} else {
 			return true;
