@@ -9,11 +9,15 @@ import TreeDiagram exposing (defaultTreeLayout)
 import TreeDiagram.Svg
 
 
-view : Maybe (Step Int Int) -> Tree Int Int -> Html msg
-view maybeStep tree =
-    Svg.svg [ width "800", height "600", viewBox "0 0 800 600", preserveAspectRatio "xMinYMin meet" ]
-        [ TreeDiagram.Svg.draw treeLayout drawNode (drawEdge "black") <| toTree maybeStep tree
-        ]
+view : ( Int, Int ) -> Maybe (Step Int Int) -> Tree Int Int -> Html msg
+view ( w, h ) maybeStep tree =
+    let
+        vBox =
+            "0 0 " ++ toString w ++ " " ++ toString h
+    in
+        Svg.svg [ width "100%", height "100%", viewBox vBox, preserveAspectRatio "xMinYMin meet" ]
+            [ TreeDiagram.Svg.draw treeLayout drawNode (drawEdge "black") <| toTree maybeStep tree
+            ]
 
 
 (=>) prop value =

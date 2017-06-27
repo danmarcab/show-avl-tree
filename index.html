@@ -8,5 +8,28 @@
   <body>
     <div></div>
     <script src="elm.js"></script>
-    <script>Elm.Main.embed(document.querySelector("div"));</script>
+    <script>
+        var app = Elm.Main.embed(document.querySelector("div"));
+
+        var sendSize = function (element) {
+            var width = parseInt(element.getAttribute('width'), 10);
+            var height = parseInt(element.getAttribute('height'), 10);
+            app.ports.size.send([width, height]);
+        };
+
+        app.ports.initSizeInfo.subscribe(function() {
+          var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+
+          var element = document.querySelectorAll('svg')[1];
+          sendSize(element);
+
+          var observer = new MutationObserver(function (mutations) {
+              sendSize(element);
+          });
+
+          observer.observe(element, {
+              attributes: true //configure it to listen to attribute changes
+          });
+        });
+    </script>
   </body>

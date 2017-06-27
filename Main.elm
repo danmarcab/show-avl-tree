@@ -8,6 +8,7 @@ import Random
 import StepByStepAVLTree exposing (Step(..))
 import Time exposing (Time)
 import TreeVisualization
+import Ports
 
 
 type alias Model =
@@ -15,6 +16,7 @@ type alias Model =
     , elem : String
     , steps : List (Step Int Int)
     , autorun : Bool
+    , size : ( Int, Int )
     }
 
 
@@ -28,11 +30,12 @@ type Msg
     | ResetToRange Int
     | ResetToRandom Int
     | InitRandomTree (List Int)
+    | Size ( Int, Int )
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { tree = initialTree, elem = "", steps = [], autorun = False }, Cmd.none )
+    ( { tree = initialTree, elem = "", steps = [], autorun = False, size = ( 600, 400 ) }, Ports.initSizeInfo () )
 
 
 initialTree : Tree Int Int
@@ -106,6 +109,7 @@ update msg model =
               , elem = ""
               , steps = []
               , autorun = False
+              , size = model.size
               }
             , Cmd.none
             )
@@ -115,6 +119,7 @@ update msg model =
               , elem = ""
               , steps = []
               , autorun = False
+              , size = model.size
               }
             , Cmd.none
             )
@@ -124,6 +129,7 @@ update msg model =
               , elem = ""
               , steps = []
               , autorun = False
+              , size = model.size
               }
             , Random.generate InitRandomTree (Random.list num <| Random.int -100 100)
             )
@@ -135,13 +141,19 @@ update msg model =
             , Cmd.none
             )
 
+        Size size ->
+            ( { model | size = size }, Cmd.none )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions { autorun } =
-    if autorun then
-        Time.every (1 * Time.second) (always Step)
-    else
-        Sub.none
+    Sub.batch
+        [ if autorun then
+            Time.every (1 * Time.second) (always Step)
+          else
+            Sub.none
+        , Ports.size Size
+        ]
 
 
 view : Model -> Html Msg
@@ -150,7 +162,7 @@ view model =
         [ class "container" ]
         [ menuView model
         , div [ style [ ( "clear", "both" ) ] ] []
-        , treeView model.steps model.tree
+        , treeView model.size model.steps model.tree
         ]
 
 
@@ -190,6 +202,7 @@ resetView model =
                     , resetButton (ResetToRange 15) "Range: 1 - 15"
                     , resetButton (ResetToRandom 7) "7 random values"
                     , resetButton (ResetToRandom 15) "15 random values"
+                    , resetButton (ResetToRandom 31) "31 random values"
                     ]
                 ]
             ]
@@ -290,13 +303,6 @@ explainStep step =
             "An error ocurred: " ++ string
 
 
-
---    | CheckBalance comparable
---    | RotateLeft comparable
---    | RotateRight comparable
---    | Error String
-
-
-treeView : List (Step Int Int) -> Tree Int Int -> Html Msg
-treeView steps tree =
-    TreeVisualization.view (List.head steps) tree
+treeView : ( Int, Int ) -> List (Step Int Int) -> Tree Int Int -> Html Msg
+treeView size steps tree =
+    TreeVisualization.view size (List.head steps) tree

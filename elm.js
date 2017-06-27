@@ -11043,19 +11043,30 @@ var _user$project$TreeVisualization$toTree = F2(
 					}));
 		}
 	});
-var _user$project$TreeVisualization$view = F2(
-	function (maybeStep, tree) {
+var _user$project$TreeVisualization$view = F3(
+	function (_p11, maybeStep, tree) {
+		var _p12 = _p11;
+		var vBox = A2(
+			_elm_lang$core$Basics_ops['++'],
+			'0 0 ',
+			A2(
+				_elm_lang$core$Basics_ops['++'],
+				_elm_lang$core$Basics$toString(_p12._0),
+				A2(
+					_elm_lang$core$Basics_ops['++'],
+					' ',
+					_elm_lang$core$Basics$toString(_p12._1))));
 		return A2(
 			_elm_lang$svg$Svg$svg,
 			{
 				ctor: '::',
-				_0: _elm_lang$svg$Svg_Attributes$width('800'),
+				_0: _elm_lang$svg$Svg_Attributes$width('100%'),
 				_1: {
 					ctor: '::',
-					_0: _elm_lang$svg$Svg_Attributes$height('600'),
+					_0: _elm_lang$svg$Svg_Attributes$height('100%'),
 					_1: {
 						ctor: '::',
-						_0: _elm_lang$svg$Svg_Attributes$viewBox('0 0 800 600'),
+						_0: _elm_lang$svg$Svg_Attributes$viewBox(vBox),
 						_1: {
 							ctor: '::',
 							_0: _elm_lang$svg$Svg_Attributes$preserveAspectRatio('xMinYMin meet'),
@@ -11076,10 +11087,31 @@ var _user$project$TreeVisualization$view = F2(
 			});
 	});
 
-var _user$project$Main$treeView = F2(
-	function (steps, tree) {
-		return A2(
+var _user$project$Ports$initSizeInfo = _elm_lang$core$Native_Platform.outgoingPort(
+	'initSizeInfo',
+	function (v) {
+		return null;
+	});
+var _user$project$Ports$size = _elm_lang$core$Native_Platform.incomingPort(
+	'size',
+	A2(
+		_elm_lang$core$Json_Decode$andThen,
+		function (x0) {
+			return A2(
+				_elm_lang$core$Json_Decode$andThen,
+				function (x1) {
+					return _elm_lang$core$Json_Decode$succeed(
+						{ctor: '_Tuple2', _0: x0, _1: x1});
+				},
+				A2(_elm_lang$core$Json_Decode$index, 1, _elm_lang$core$Json_Decode$int));
+		},
+		A2(_elm_lang$core$Json_Decode$index, 0, _elm_lang$core$Json_Decode$int)));
+
+var _user$project$Main$treeView = F3(
+	function (size, steps, tree) {
+		return A3(
 			_user$project$TreeVisualization$view,
+			size,
 			_elm_lang$core$List$head(steps),
 			tree);
 	});
@@ -11180,14 +11212,19 @@ var _user$project$Main$init = {
 		tree: _user$project$Main$initialTree,
 		elem: '',
 		steps: {ctor: '[]'},
-		autorun: false
+		autorun: false,
+		size: {ctor: '_Tuple2', _0: 600, _1: 400}
 	},
-	_1: _elm_lang$core$Platform_Cmd$none
+	_1: _user$project$Ports$initSizeInfo(
+		{ctor: '_Tuple0'})
 };
-var _user$project$Main$Model = F4(
-	function (a, b, c, d) {
-		return {tree: a, elem: b, steps: c, autorun: d};
+var _user$project$Main$Model = F5(
+	function (a, b, c, d, e) {
+		return {tree: a, elem: b, steps: c, autorun: d, size: e};
 	});
+var _user$project$Main$Size = function (a) {
+	return {ctor: 'Size', _0: a};
+};
 var _user$project$Main$InitRandomTree = function (a) {
 	return {ctor: 'InitRandomTree', _0: a};
 };
@@ -11299,7 +11336,8 @@ var _user$project$Main$update = F2(
 						tree: _user$project$AVLTree$empty,
 						elem: '',
 						steps: {ctor: '[]'},
-						autorun: false
+						autorun: false,
+						size: model.size
 					},
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
@@ -11316,7 +11354,8 @@ var _user$project$Main$update = F2(
 								A2(_elm_lang$core$List$range, 1, _p3._0))),
 						elem: '',
 						steps: {ctor: '[]'},
-						autorun: false
+						autorun: false,
+						size: model.size
 					},
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
@@ -11327,7 +11366,8 @@ var _user$project$Main$update = F2(
 						tree: _user$project$AVLTree$empty,
 						elem: '',
 						steps: {ctor: '[]'},
-						autorun: false
+						autorun: false,
+						size: model.size
 					},
 					_1: A2(
 						_elm_lang$core$Random$generate,
@@ -11337,7 +11377,7 @@ var _user$project$Main$update = F2(
 							_p3._0,
 							A2(_elm_lang$core$Random$int, -100, 100)))
 				};
-			default:
+			case 'InitRandomTree':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
@@ -11351,6 +11391,14 @@ var _user$project$Main$update = F2(
 									},
 									_p3._0))
 						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			default:
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{size: _p3._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 		}
@@ -11479,7 +11527,14 @@ var _user$project$Main$resetView = function (model) {
 														resetButton,
 														_user$project$Main$ResetToRandom(15),
 														'15 random values'),
-													_1: {ctor: '[]'}
+													_1: {
+														ctor: '::',
+														_0: A2(
+															resetButton,
+															_user$project$Main$ResetToRandom(31),
+															'31 random values'),
+														_1: {ctor: '[]'}
+													}
 												}
 											}
 										}
@@ -11498,10 +11553,19 @@ var _user$project$Main$UpdateElem = function (a) {
 var _user$project$Main$Step = {ctor: 'Step'};
 var _user$project$Main$subscriptions = function (_p12) {
 	var _p13 = _p12;
-	return _p13.autorun ? A2(
-		_elm_lang$core$Time$every,
-		1 * _elm_lang$core$Time$second,
-		_elm_lang$core$Basics$always(_user$project$Main$Step)) : _elm_lang$core$Platform_Sub$none;
+	return _elm_lang$core$Platform_Sub$batch(
+		{
+			ctor: '::',
+			_0: _p13.autorun ? A2(
+				_elm_lang$core$Time$every,
+				1 * _elm_lang$core$Time$second,
+				_elm_lang$core$Basics$always(_user$project$Main$Step)) : _elm_lang$core$Platform_Sub$none,
+			_1: {
+				ctor: '::',
+				_0: _user$project$Ports$size(_user$project$Main$Size),
+				_1: {ctor: '[]'}
+			}
+		});
 };
 var _user$project$Main$stepView = function (model) {
 	var content = function () {
@@ -11756,7 +11820,7 @@ var _user$project$Main$view = function (model) {
 					{ctor: '[]'}),
 				_1: {
 					ctor: '::',
-					_0: A2(_user$project$Main$treeView, model.steps, model.tree),
+					_0: A3(_user$project$Main$treeView, model.size, model.steps, model.tree),
 					_1: {ctor: '[]'}
 				}
 			}
