@@ -5,7 +5,7 @@ Shows how an [AVL tree](https://en.wikipedia.org/wiki/AVL_tree) works.
 It allows you to see how operations on a AVL tree are done. If you ever had
 trouble understanding how they keep the balance this may help you!
 
-You can see it running [here](https://danmarcab.github.io/show-avl-tree/).
+You can see it running [here](https://show-avl-tree.netlify.com/).
 
 If you find it useful please share!
 
