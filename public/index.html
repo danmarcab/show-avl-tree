@@ -1,35 +1,10 @@
   <!doctype html>
-  <link rel="stylesheet" href="../style.css" />
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
-  <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
 
   <body>
     <div></div>
     <script src="ShowAvlTree.js"></script>
     <script>
-        var app = ShowAvlTree.init({node: document.querySelector("div")});
-
-        var sendSize = function (element) {
-            var width = parseInt(element.getAttribute('width'), 10);
-            var height = parseInt(element.getAttribute('height'), 10);
-            app.ports.size.send([width, height]);
-        };
-
-        app.ports.initSizeInfo.subscribe(function() {
-          var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-
-          var element = document.querySelectorAll('svg')[1];
-          sendSize(element);
-
-          var observer = new MutationObserver(function (mutations) {
-              sendSize(element);
-          });
-
-          observer.observe(element, {
-              attributes: true //configure it to listen to attribute changes
-          });
-        });
+        var app = ShowAvlTree.appModule.init({node: document.querySelector("div")});
+        ShowAvlTree.configurePorts(app);
     </script>
   </body>

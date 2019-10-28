@@ -2,9 +2,14 @@ module Main exposing (..)
 
 import AVLTree exposing (..)
 import Browser
+import Element exposing (Element)
+import Element.Border as Border
+import Element.Font as Font
+import Element.Input as Input
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick)
+import Json.Decode
 import Ports
 import Random
 import StepByStepAVLTree exposing (Step(..))
@@ -22,12 +27,26 @@ type alias Model =
     , steps : List (Step Int Int)
     , autorun : Bool
     , size : ( Int, Int )
+    , embedded : Bool
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init () =
-    ( { tree = initialTree, elem = "", steps = [], autorun = False, size = ( 600, 400 ) }, Ports.initSizeInfo () )
+init : Json.Decode.Value -> ( Model, Cmd Msg )
+init flags =
+    let
+        embedded =
+            Json.Decode.decodeValue (Json.Decode.field "embedded" Json.Decode.bool) flags
+                |> Result.withDefault False
+    in
+    ( { tree = initialTree
+      , elem = ""
+      , steps = []
+      , autorun = False
+      , size = ( 600, 400 )
+      , embedded = embedded
+      }
+    , Ports.initSizeInfo ()
+    )
 
 
 main =
@@ -163,25 +182,35 @@ subscriptions { autorun } =
 
 view : Model -> Html Msg
 view model =
-    div
-        [ class "container" ]
-        [ menuView model
-        , div [ style "clear" "both" ] []
-        , treeView model.size model.steps model.tree
+    Element.layoutWith
+        { options =
+            if model.embedded then
+                [ Element.noStaticStyleSheet ]
+
+            else
+                []
+        }
+        [ Element.padding 10
+        , Font.size 18
         ]
+        (Element.column []
+            [ menuView model
+            , treeView model.size model.steps model.tree
+            ]
+        )
 
 
-menuView : Model -> Html Msg
+menuView : Model -> Element Msg
 menuView model =
-    header [ class "row" ]
-        [ resetView model
+    Element.row [ Element.spacing 30 ]
+        [ initView model
         , actionsView model
         , stepView model
         ]
 
 
-resetView : Model -> Html Msg
-resetView model =
+initView : Model -> Element Msg
+initView model =
     let
         buttonEnabled =
             List.isEmpty model.steps
@@ -191,29 +220,23 @@ resetView model =
                 [ type_ "button", onClick toMsg, disabled <| not buttonEnabled, class "dropdown-item" ]
                 [ text title ]
     in
-    div [ class "col-3" ]
-        [ h4 [] [ text "Reset the tree" ]
-        , div [ class "dropdown" ]
-            [ button
-                [ type_ "button"
-                , disabled <| not buttonEnabled
-                , class "btn btn-warning dropdown-toggle"
-                , attribute "data-toggle" "dropdown"
-                ]
-                [ text "Reset to ..." ]
-            , div [ class "dropdown-menu" ]
-                [ resetButton ResetToEmpty "Empty"
-                , resetButton (ResetToRange 7) "Range: 1 - 7"
-                , resetButton (ResetToRange 15) "Range: 1 - 15"
-                , resetButton (ResetToRandom 7) "7 random values"
-                , resetButton (ResetToRandom 15) "15 random values"
-                , resetButton (ResetToRandom 31) "31 random values"
-                ]
+    Element.column
+        [ Element.alignTop
+        , Element.width (Element.fillPortion 3)
+        ]
+        [ heading "Initialize the tree"
+        , Element.wrappedRow [ Element.spacing 5 ]
+            [ actionButton [] ResetToEmpty "Empty"
+            , actionButton [] (ResetToRange 7) "Range: 1 - 7"
+            , actionButton [] (ResetToRange 15) "Range: 1 - 15"
+            , actionButton [] (ResetToRandom 7) "7 random values"
+            , actionButton [] (ResetToRandom 15) "15 random values"
+            , actionButton [] (ResetToRandom 31) "31 random values"
             ]
         ]
 
 
-actionsView : Model -> Html Msg
+actionsView : Model -> Element Msg
 actionsView model =
     let
         inputsDisabled =
@@ -229,42 +252,86 @@ actionsView model =
 
         buttonsDisabled =
             inputsDisabled || invalidElem
-
-        actionButton toMsg title =
-            span [ class "input-group-btn" ]
-                [ button [ type_ "button", class "btn btn-primary btn-sm", onClick toMsg, disabled buttonsDisabled ]
-                    [ text title ]
-                ]
     in
-    div [ class "col-4" ]
-        [ h4 [] [ text "Insert" ]
-        , div [ class "input-group" ]
-            [ input [ class "form-control", onInput UpdateElem, disabled inputsDisabled, value model.elem ] []
-            , actionButton StepInsert "Step by Step"
-            , actionButton AutoStepInsert "Auto"
-            , actionButton Insert "Quick"
+    Element.column
+        [ Element.alignTop
+        , Element.width (Element.fillPortion 4)
+        , Element.spacing 10
+        ]
+        [ Element.row
+            [ Element.width Element.fill
+            , Element.spacing 5
             ]
-        , h4 [] [ text "Delete" ]
-        , p [] [ text "Coming soon..." ]
+            [ Input.text
+                [ Element.width (Element.px 60)
+                , Element.paddingXY 5 3
+                ]
+                { onChange = UpdateElem
+                , text = model.elem
+                , placeholder = Nothing
+                , label = Input.labelAbove [] (heading "Insert")
+                }
+            , actionButton [] StepInsert "Step by Step"
+            , actionButton [] AutoStepInsert "Auto"
+            , actionButton [] Insert "Quick"
+            ]
+        , heading "Delete"
+        , Element.paragraph [] [ Element.text "Coming soon..." ]
         ]
 
 
-stepView : Model -> Html Msg
+actionButton attrs toMsg title =
+    Input.button
+        ([ Border.width 1
+         , Border.rounded 3
+         , Element.paddingXY 5 3
+         , Element.width Element.shrink
+         , Element.alignBottom
+         , Element.mouseOver [ Element.moveUp 1 ]
+         ]
+            ++ attrs
+        )
+        { onPress = Just toMsg
+        , label =
+            Element.text title
+        }
+
+
+stepView : Model -> Element Msg
 stepView model =
     let
         content =
             case List.head model.steps of
                 Nothing ->
-                    [ text "Nothing to explain. Please start a 'Step by Step' or 'Auto' insert"
+                    [ Element.paragraph []
+                        [ Element.text "Nothing to explain. Please start a 'Step by Step' or 'Auto' insert"
+                        ]
                     ]
 
                 Just step ->
-                    [ p [] [ text <| explainStep step ]
-                    , button [ onClick Step ] [ text "Next Step" ]
+                    [ Element.paragraph []
+                        [ Element.text <| explainStep step
+                        ]
+                    , actionButton [ Element.alignBottom, Element.alignRight ] Step "Next Step"
                     ]
     in
-    div [ class "col" ]
-        ([ h4 [] [ text "Explanation" ] ] ++ content)
+    Element.column
+        [ Element.alignTop
+        , Element.width (Element.fillPortion 4)
+        , Element.spacing 5
+        , Element.height Element.fill
+        ]
+        ([ heading "Explanation" ]
+            ++ content
+        )
+
+
+heading text =
+    Element.paragraph
+        [ Font.size 22
+        , Font.bold
+        ]
+        [ Element.text text ]
 
 
 explainStep : Step Int Int -> String
@@ -308,6 +375,6 @@ explainStep step =
             "An error ocurred: " ++ string
 
 
-treeView : ( Int, Int ) -> List (Step Int Int) -> Tree Int Int -> Html Msg
+treeView : ( Int, Int ) -> List (Step Int Int) -> Tree Int Int -> Element Msg
 treeView size steps tree =
-    TreeVisualization.view size (List.head steps) tree
+    Element.html <| TreeVisualization.view size (List.head steps) tree

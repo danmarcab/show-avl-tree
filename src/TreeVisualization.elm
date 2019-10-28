@@ -15,7 +15,13 @@ view ( w, h ) maybeStep tree =
         vBox =
             "0 0 " ++ String.fromInt w ++ " " ++ String.fromInt h
     in
-    Svg.svg [ width "100%", height "600", viewBox vBox, preserveAspectRatio "xMidYMid meet" ]
+    Svg.svg
+        [ width "100%"
+        , height "600"
+        , viewBox vBox
+        , preserveAspectRatio "xMidYMid meet"
+        , class "show-avl-tree-wrapper"
+        ]
         [ TreeDiagram.Svg.draw treeLayout drawNode (drawEdge "black") <| toTree maybeStep tree
         ]
 
