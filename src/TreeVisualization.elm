@@ -13,15 +13,11 @@ view : ( Int, Int ) -> Maybe (Step Int Int) -> Tree Int Int -> Html msg
 view ( w, h ) maybeStep tree =
     let
         vBox =
-            "0 0 " ++ toString w ++ " " ++ toString h
+            "0 0 " ++ String.fromInt w ++ " " ++ String.fromInt h
     in
-        Svg.svg [ width "100%", height "600", viewBox vBox, preserveAspectRatio "xMidYMid meet" ]
-            [ TreeDiagram.Svg.draw treeLayout drawNode (drawEdge "black") <| toTree maybeStep tree
-            ]
-
-
-(=>) prop value =
-    prop (toString value)
+    Svg.svg [ width "100%", height "600", viewBox vBox, preserveAspectRatio "xMidYMid meet" ]
+        [ TreeDiagram.Svg.draw treeLayout drawNode (drawEdge "black") <| toTree maybeStep tree
+        ]
 
 
 treeLayout =
@@ -40,6 +36,7 @@ drawEdge color ( x, y ) =
         rot_ =
             if x > 0 then
                 theta
+
             else
                 pi + theta
 
@@ -55,24 +52,30 @@ drawEdge color ( x, y ) =
         ( xTo, yTo ) =
             ( scale * x, scale * y )
     in
-        g
-            []
-            [ line
-                [ x1 => 0, y1 => 0, x2 => xTo, y2 => yTo, stroke color, strokeWidth "2" ]
-                []
-            , g
-                [ transform <|
-                    "translate("
-                        ++ (toString xTo)
-                        ++ " "
-                        ++ (toString yTo)
-                        ++ ") "
-                        ++ "rotate("
-                        ++ (toString rot)
-                        ++ ")"
-                ]
-                [ arrow color ]
+    g
+        []
+        [ line
+            [ x1 (String.fromInt 0)
+            , y1 (String.fromInt 0)
+            , x2 (String.fromFloat xTo)
+            , y2 (String.fromFloat yTo)
+            , stroke color
+            , strokeWidth "2"
             ]
+            []
+        , g
+            [ transform <|
+                "translate("
+                    ++ String.fromFloat xTo
+                    ++ " "
+                    ++ String.fromFloat yTo
+                    ++ ") "
+                    ++ "rotate("
+                    ++ String.fromFloat rot
+                    ++ ")"
+            ]
+            [ arrow color ]
+        ]
 
 
 arrow : String -> Svg msg
@@ -93,8 +96,8 @@ type Node a
 
 
 drawNode : Node Int -> Svg msg
-drawNode n =
-    case n of
+drawNode node =
+    case node of
         Empty ->
             emptyNode
 
@@ -138,7 +141,8 @@ complexNode textColor backColor value extraSvg =
     g
         []
         ([ circle [ r "27", stroke "black", strokeWidth "2", fill backColor, cx "0", cy "0" ] []
-         , text_ [ textAnchor "middle", fill textColor, fontSize "30", fontFamily "sans-serif", transform "translate(0,11)" ] [ text <| toString value ]
+         , text_ [ textAnchor "middle", fill textColor, fontSize "30", fontFamily "sans-serif", transform "translate(0,11)" ]
+            [ text <| String.fromInt value ]
          ]
             ++ extraSvg
         )
@@ -210,46 +214,55 @@ buildNode maybeStep key =
                     if k1 == key then
                         if k2 < key then
                             GoLeft key
+
                         else if k2 > key then
                             GoRight key
+
                         else
                             Found key
+
                     else
                         Normal key
 
                 ChangeValue k v ->
                     if k == key then
                         Change key
+
                     else
                         Normal key
 
                 InsertLeft k1 k2 v ->
                     if k1 == key then
                         GoLeft key
+
                     else
                         Normal key
 
                 InsertRight k1 k2 v ->
                     if k1 == key then
                         GoRight key
+
                     else
                         Normal key
 
                 CheckBalance k ->
                     if k == key then
                         CheckBal key
+
                     else
                         Normal key
 
                 RotateLeft k ->
                     if k == key then
                         RotLeft key
+
                     else
                         Normal key
 
                 RotateRight k ->
                     if k == key then
                         RotRight key
+
                     else
                         Normal key
 

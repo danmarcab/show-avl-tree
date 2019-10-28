@@ -7,9 +7,9 @@
 
   <body>
     <div></div>
-    <script src="elm.js"></script>
+    <script src="./ShowAvlTree.js"></script>
     <script>
-        var app = Elm.Main.embed(document.querySelector("div"));
+        var app = ShowAvlTree.init({node: document.querySelector("div")});
 
         var sendSize = function (element) {
             var width = parseInt(element.getAttribute('width'), 10);

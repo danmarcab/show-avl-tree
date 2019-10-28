@@ -1,14 +1,16 @@
 module Main exposing (..)
 
+import AVLTree exposing (..)
+import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
-import AVLTree exposing (..)
+import Ports
 import Random
 import StepByStepAVLTree exposing (Step(..))
-import Time exposing (Time)
+import Time
 import TreeVisualization
-import Ports
+
 
 
 -- MODEL --
@@ -23,13 +25,18 @@ type alias Model =
     }
 
 
-init : ( Model, Cmd Msg )
-init =
+init : () -> ( Model, Cmd Msg )
+init () =
     ( { tree = initialTree, elem = "", steps = [], autorun = False, size = ( 600, 400 ) }, Ports.initSizeInfo () )
 
 
 main =
-    program { init = init, view = view, update = update, subscriptions = subscriptions }
+    Browser.element
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
 
 
 initialTree : Tree Int Int
@@ -65,21 +72,21 @@ update msg model =
                 updater val mod =
                     { mod | tree = AVLTree.insert val val mod.tree }
             in
-                ( updateIfValidElem updater model, Cmd.none )
+            ( updateIfValidElem updater model, Cmd.none )
 
         StepInsert ->
             let
                 updater val mod =
                     { mod | steps = [ StartInsert val val ] }
             in
-                ( updateIfValidElem updater model, Cmd.none )
+            ( updateIfValidElem updater model, Cmd.none )
 
         AutoStepInsert ->
             let
                 updater val mod =
                     { mod | steps = [ StartInsert val val ], autorun = True }
             in
-                ( updateIfValidElem updater model, Cmd.none )
+            ( updateIfValidElem updater model, Cmd.none )
 
         Step ->
             case model.steps of
@@ -91,7 +98,7 @@ update msg model =
                         ( newTree, additionalSteps ) =
                             StepByStepAVLTree.applyStep step model.tree
                     in
-                        ( { model | tree = newTree, steps = nextSteps ++ additionalSteps }, Cmd.none )
+                    ( { model | tree = newTree, steps = nextSteps ++ additionalSteps }, Cmd.none )
 
         ResetToEmpty ->
             ( resetModelwithTree model AVLTree.empty, Cmd.none )
@@ -112,10 +119,10 @@ update msg model =
 updateIfValidElem : (Int -> Model -> Model) -> Model -> Model
 updateIfValidElem fun model =
     case String.toInt model.elem of
-        Ok val ->
+        Just val ->
             fun val { model | elem = "" }
 
-        Err _ ->
+        Nothing ->
             { model | elem = "" }
 
 
@@ -142,7 +149,8 @@ subscriptions : Model -> Sub Msg
 subscriptions { autorun } =
     Sub.batch
         [ if autorun then
-            Time.every (1 * Time.second) (always Step)
+            Time.every 1000 (always Step)
+
           else
             Sub.none
         , Ports.size Size
@@ -158,7 +166,7 @@ view model =
     div
         [ class "container" ]
         [ menuView model
-        , div [ style [ ( "clear", "both" ) ] ] []
+        , div [ style "clear" "both" ] []
         , treeView model.size model.steps model.tree
         ]
 
@@ -183,26 +191,26 @@ resetView model =
                 [ type_ "button", onClick toMsg, disabled <| not buttonEnabled, class "dropdown-item" ]
                 [ text title ]
     in
-        div [ class "col-3" ]
-            [ h4 [] [ text "Reset the tree" ]
-            , div [ class "dropdown" ]
-                [ button
-                    [ type_ "button"
-                    , disabled <| not buttonEnabled
-                    , class "btn btn-warning dropdown-toggle"
-                    , attribute "data-toggle" "dropdown"
-                    ]
-                    [ text "Reset to ..." ]
-                , div [ class "dropdown-menu" ]
-                    [ resetButton ResetToEmpty "Empty"
-                    , resetButton (ResetToRange 7) "Range: 1 - 7"
-                    , resetButton (ResetToRange 15) "Range: 1 - 15"
-                    , resetButton (ResetToRandom 7) "7 random values"
-                    , resetButton (ResetToRandom 15) "15 random values"
-                    , resetButton (ResetToRandom 31) "31 random values"
-                    ]
+    div [ class "col-3" ]
+        [ h4 [] [ text "Reset the tree" ]
+        , div [ class "dropdown" ]
+            [ button
+                [ type_ "button"
+                , disabled <| not buttonEnabled
+                , class "btn btn-warning dropdown-toggle"
+                , attribute "data-toggle" "dropdown"
+                ]
+                [ text "Reset to ..." ]
+            , div [ class "dropdown-menu" ]
+                [ resetButton ResetToEmpty "Empty"
+                , resetButton (ResetToRange 7) "Range: 1 - 7"
+                , resetButton (ResetToRange 15) "Range: 1 - 15"
+                , resetButton (ResetToRandom 7) "7 random values"
+                , resetButton (ResetToRandom 15) "15 random values"
+                , resetButton (ResetToRandom 31) "31 random values"
                 ]
             ]
+        ]
 
 
 actionsView : Model -> Html Msg
@@ -212,15 +220,12 @@ actionsView model =
             not <| List.isEmpty model.steps
 
         invalidElem =
-            -- TODO: Remove once new version of core released: https://github.com/elm-lang/core/pull/834
-            (model.elem == "-")
-                || (model.elem == "+")
-                || case String.toInt model.elem of
-                    Ok val ->
-                        False
+            case String.toInt model.elem of
+                Just _ ->
+                    False
 
-                    Err _ ->
-                        True
+                Nothing ->
+                    True
 
         buttonsDisabled =
             inputsDisabled || invalidElem
@@ -231,17 +236,17 @@ actionsView model =
                     [ text title ]
                 ]
     in
-        div [ class "col-4" ]
-            [ h4 [] [ text "Insert" ]
-            , div [ class "input-group" ]
-                [ input [ class "form-control", onInput UpdateElem, disabled inputsDisabled, value model.elem ] []
-                , actionButton StepInsert "Step by Step"
-                , actionButton AutoStepInsert "Auto"
-                , actionButton Insert "Quick"
-                ]
-            , h4 [] [ text "Delete" ]
-            , p [] [ text "Coming soon..." ]
+    div [ class "col-4" ]
+        [ h4 [] [ text "Insert" ]
+        , div [ class "input-group" ]
+            [ input [ class "form-control", onInput UpdateElem, disabled inputsDisabled, value model.elem ] []
+            , actionButton StepInsert "Step by Step"
+            , actionButton AutoStepInsert "Auto"
+            , actionButton Insert "Quick"
             ]
+        , h4 [] [ text "Delete" ]
+        , p [] [ text "Coming soon..." ]
+        ]
 
 
 stepView : Model -> Html Msg
@@ -258,35 +263,37 @@ stepView model =
                     , button [ onClick Step ] [ text "Next Step" ]
                     ]
     in
-        div [ class "col" ]
-            ([ h4 [] [ text "Explanation" ] ] ++ content)
+    div [ class "col" ]
+        ([ h4 [] [ text "Explanation" ] ] ++ content)
 
 
 explainStep : Step Int Int -> String
 explainStep step =
     case step of
         StartInsert key val ->
-            "We are going to insert " ++ toString key ++ " in the tree. We'll start from the root."
+            "We are going to insert " ++ String.fromInt key ++ " in the tree. We'll start from the root."
 
         InsertRoot key val ->
-            "The tree is empty, so We are going to make " ++ toString key ++ " the root of the tree."
+            "The tree is empty, so We are going to make " ++ String.fromInt key ++ " the root of the tree."
 
         CheckInsert nodeKey key val ->
             if key > nodeKey then
-                toString key ++ " is greater than " ++ toString nodeKey ++ ". We need to check the right subtree."
+                String.fromInt key ++ " is greater than " ++ String.fromInt nodeKey ++ ". We need to check the right subtree."
+
             else if key > nodeKey then
-                toString key ++ " is less than " ++ toString nodeKey ++ ". We need to check the left subtree."
+                String.fromInt key ++ " is less than " ++ String.fromInt nodeKey ++ ". We need to check the left subtree."
+
             else
-                toString key ++ " is equal to " ++ toString nodeKey ++ ". We found the node."
+                String.fromInt key ++ " is equal to " ++ String.fromInt nodeKey ++ ". We found the node."
 
         ChangeValue key val ->
-            "We'll change the value to " ++ toString val ++ "."
+            "We'll change the value to " ++ String.fromInt val ++ "."
 
         InsertLeft nodeKey key val ->
-            "The left subtree was empty, we'll insert " ++ toString key ++ " there."
+            "The left subtree was empty, we'll insert " ++ String.fromInt key ++ " there."
 
         InsertRight nodeKey key val ->
-            "The right subtree was empty, we'll insert " ++ toString key ++ " there."
+            "The right subtree was empty, we'll insert " ++ String.fromInt key ++ " there."
 
         CheckBalance key ->
             "We check the balance of the subtree."

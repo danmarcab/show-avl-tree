@@ -1,4 +1,4 @@
-module AVLTree exposing (Tree, empty, node, nodeInfo, insert, leaf, fromList, Balance(..), getBalance, updateHeight, rotateLeft, rotateRight)
+module AVLTree exposing (Balance(..), Tree, empty, fromList, getBalance, insert, leaf, node, nodeInfo, rotateLeft, rotateRight, updateHeight)
 
 
 type Tree key val
@@ -49,13 +49,15 @@ insert key value tree =
                 Empty ->
                     leaf key value
 
-                Node node ->
-                    if key < node.key then
-                        Node { node | left = insert key value node.left }
-                    else if key > node.key then
-                        Node { node | right = insert key value node.right }
+                Node nod ->
+                    if key < nod.key then
+                        Node { nod | left = insert key value nod.left }
+
+                    else if key > nod.key then
+                        Node { nod | right = insert key value nod.right }
+
                     else
-                        Node { node | value = value }
+                        Node { nod | value = value }
 
         balancedTree =
             case getBalance newTree of
@@ -69,12 +71,12 @@ insert key value tree =
                     newTree
 
                 LeftHeavy n ->
-                    balanceLeftHeavy (newTree)
+                    balanceLeftHeavy newTree
 
                 RightHeavy n ->
-                    balanceRightHeavy (newTree)
+                    balanceRightHeavy newTree
     in
-        updateHeight balancedTree
+    updateHeight balancedTree
 
 
 leaf : comparable -> v -> Tree comparable v
@@ -93,8 +95,8 @@ height tree =
         Empty ->
             -1
 
-        Node node ->
-            node.height
+        Node nod ->
+            nod.height
 
 
 getBalance : Tree comparable v -> Balance
@@ -103,17 +105,19 @@ getBalance tree =
         Empty ->
             Balanced
 
-        Node node ->
+        Node nod ->
             let
                 diff =
-                    (height node.left) - (height node.right)
+                    height nod.left - height nod.right
             in
-                if diff > 0 then
-                    LeftHeavy (abs diff)
-                else if diff < 0 then
-                    RightHeavy (abs diff)
-                else
-                    Balanced
+            if diff > 0 then
+                LeftHeavy (abs diff)
+
+            else if diff < 0 then
+                RightHeavy (abs diff)
+
+            else
+                Balanced
 
 
 balanceLeftHeavy : Tree comparable v -> Tree comparable v
@@ -122,8 +126,8 @@ balanceLeftHeavy tree =
         Empty ->
             Empty
 
-        Node node ->
-            case getBalance node.left of
+        Node nod ->
+            case getBalance nod.left of
                 Balanced ->
                     tree
 
@@ -133,9 +137,9 @@ balanceLeftHeavy tree =
                 RightHeavy n ->
                     let
                         newLeft =
-                            rotateLeft node.left
+                            rotateLeft nod.left
                     in
-                        rotateRight (Node { node | left = newLeft })
+                    rotateRight (Node { nod | left = newLeft })
 
 
 balanceRightHeavy : Tree comparable v -> Tree comparable v
@@ -144,8 +148,8 @@ balanceRightHeavy tree =
         Empty ->
             Empty
 
-        Node node ->
-            case getBalance node.right of
+        Node nod ->
+            case getBalance nod.right of
                 Balanced ->
                     tree
 
@@ -155,9 +159,9 @@ balanceRightHeavy tree =
                 LeftHeavy n ->
                     let
                         newRight =
-                            rotateRight node.right
+                            rotateRight nod.right
                     in
-                        rotateLeft (Node { node | right = newRight })
+                    rotateLeft (Node { nod | right = newRight })
 
 
 rotateRight : Tree comparable v -> Tree comparable v
@@ -166,17 +170,17 @@ rotateRight tree =
         Empty ->
             Empty
 
-        Node node ->
-            case node.left of
+        Node nod ->
+            case nod.left of
                 Empty ->
                     tree
 
                 Node pivotNode ->
                     let
                         newTree =
-                            updateHeight (Node { node | left = pivotNode.right })
+                            updateHeight (Node { nod | left = pivotNode.right })
                     in
-                        (Node { pivotNode | right = newTree })
+                    Node { pivotNode | right = newTree }
 
 
 rotateLeft : Tree comparable v -> Tree comparable v
@@ -185,17 +189,17 @@ rotateLeft tree =
         Empty ->
             Empty
 
-        Node node ->
-            case node.right of
+        Node nod ->
+            case nod.right of
                 Empty ->
                     tree
 
                 Node pivotNode ->
                     let
                         newTree =
-                            updateHeight (Node { node | right = pivotNode.left })
+                            updateHeight (Node { nod | right = pivotNode.left })
                     in
-                        (Node { pivotNode | left = newTree })
+                    Node { pivotNode | left = newTree }
 
 
 updateHeight : Tree comparable v -> Tree comparable v
@@ -204,5 +208,5 @@ updateHeight tree =
         Empty ->
             Empty
 
-        Node node ->
-            Node { node | height = 1 + (max (height node.left) (height node.right)) }
+        Node nod ->
+            Node { nod | height = 1 + max (height nod.left) (height nod.right) }

@@ -1,4 +1,4 @@
-module StepByStepAVLTree exposing (applyStep, Step(..))
+module StepByStepAVLTree exposing (Step(..), applyStep)
 
 import AVLTree exposing (..)
 
@@ -45,21 +45,23 @@ applyStep step tree =
                         Nothing ->
                             ( tree, [ Error "CheckInsert checking a node that is not in the tree" ] )
 
-                        Just node ->
-                            if key < node.key then
-                                case nodeInfo node.left of
+                        Just info ->
+                            if key < info.key then
+                                case nodeInfo info.left of
                                     Nothing ->
-                                        ( tree, [ InsertLeft node.key key value ] )
+                                        ( tree, [ InsertLeft info.key key value ] )
 
                                     Just left ->
                                         ( tree, [ CheckInsert left.key key value ] )
-                            else if key > node.key then
-                                case nodeInfo node.right of
+
+                            else if key > info.key then
+                                case nodeInfo info.right of
                                     Nothing ->
-                                        ( tree, [ InsertRight node.key key value ] )
+                                        ( tree, [ InsertRight info.key key value ] )
 
                                     Just right ->
                                         ( tree, [ CheckInsert right.key key value ] )
+
                             else
                                 ( tree, [ ChangeValue key value ] )
 
@@ -88,7 +90,7 @@ applyStep step tree =
                         RightHeavy 1 ->
                             []
 
-                        LeftHeavy n ->
+                        LeftHeavy _ ->
                             case nodeInfo currentSubTree of
                                 Nothing ->
                                     [ Error "Empty node on left balance" ]
@@ -98,10 +100,10 @@ applyStep step tree =
                                         Balanced ->
                                             []
 
-                                        LeftHeavy n ->
+                                        LeftHeavy _ ->
                                             [ RotateRight key ]
 
-                                        RightHeavy n ->
+                                        RightHeavy _ ->
                                             case nodeInfo node.left of
                                                 Nothing ->
                                                     [ Error "Empty node on left left balance" ]
@@ -109,7 +111,7 @@ applyStep step tree =
                                                 Just left ->
                                                     [ RotateLeft left.key, RotateRight key ]
 
-                        RightHeavy n ->
+                        RightHeavy _ ->
                             case nodeInfo currentSubTree of
                                 Nothing ->
                                     [ Error "Empty node on right balance" ]
@@ -119,10 +121,10 @@ applyStep step tree =
                                         Balanced ->
                                             []
 
-                                        RightHeavy n ->
+                                        RightHeavy _ ->
                                             [ RotateLeft key ]
 
-                                        LeftHeavy n ->
+                                        LeftHeavy _ ->
                                             case nodeInfo node.right of
                                                 Nothing ->
                                                     [ Error "Empty node on right right balance" ]
@@ -138,7 +140,7 @@ applyStep step tree =
                         Nothing ->
                             []
             in
-                ( tree, balanceMsgs ++ parentMsg )
+            ( tree, balanceMsgs ++ parentMsg )
 
         RotateLeft key ->
             ( apply key ApplyRotateLeft tree, [] )
@@ -165,8 +167,10 @@ parentKey key tree =
                     Just leftNode ->
                         if key == leftNode.key then
                             Just node.key
+
                         else
                             parentKey key node.left
+
             else if key > node.key then
                 case nodeInfo node.right of
                     Nothing ->
@@ -175,8 +179,10 @@ parentKey key tree =
                     Just rightNode ->
                         if key == rightNode.key then
                             Just node.key
+
                         else
                             parentKey key node.right
+
             else
                 Nothing
 
@@ -190,8 +196,10 @@ subTree key tree =
         Just node ->
             if key < node.key then
                 subTree key node.left
+
             else if key > node.key then
                 subTree key node.right
+
             else
                 tree
 
@@ -215,18 +223,20 @@ apply key step tree =
                 Just node ->
                     if key < node.key then
                         AVLTree.node { node | left = apply key step node.left }
+
                     else if key > node.key then
                         AVLTree.node { node | right = apply key step node.right }
+
                     else
                         case step of
                             ApplyChangeValue value ->
                                 AVLTree.node { node | value = value }
 
-                            ApplyInsertLeft key value ->
-                                AVLTree.node { node | left = leaf key value }
+                            ApplyInsertLeft stepKey value ->
+                                AVLTree.node { node | left = leaf stepKey value }
 
-                            ApplyInsertRight key value ->
-                                AVLTree.node { node | right = leaf key value }
+                            ApplyInsertRight stepKey value ->
+                                AVLTree.node { node | right = leaf stepKey value }
 
                             ApplyRotateLeft ->
                                 rotateLeft tree
@@ -234,4 +244,4 @@ apply key step tree =
                             ApplyRotateRight ->
                                 rotateRight tree
     in
-        updateHeight newTree
+    updateHeight newTree
