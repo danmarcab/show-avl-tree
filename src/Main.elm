@@ -7,10 +7,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
 import Json.Decode
-import Ports
 import Random
 import StepByStepAVLTree exposing (Step(..))
 import Time
@@ -35,7 +32,7 @@ init : Json.Decode.Value -> ( Model, Cmd Msg )
 init flags =
     let
         embedded =
-            Json.Decode.decodeValue (Json.Decode.field "embedded" Json.Decode.bool) flags
+            Json.Decode.decodeValue (Json.Decode.field "elmUIEmbedded" Json.Decode.bool) flags
                 |> Result.withDefault False
     in
     ( { tree = initialTree
@@ -45,7 +42,7 @@ init flags =
       , size = ( 600, 400 )
       , embedded = embedded
       }
-    , Ports.initSizeInfo ()
+    , Cmd.none
     )
 
 
@@ -77,7 +74,6 @@ type Msg
     | ResetToRange Int
     | ResetToRandom Int
     | InitRandomTree (List Int)
-    | Size ( Int, Int )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -131,9 +127,6 @@ update msg model =
         InitRandomTree list ->
             ( resetModelwithTree model <| treeFromList list, Cmd.none )
 
-        Size size ->
-            ( { model | size = size }, Cmd.none )
-
 
 updateIfValidElem : (Int -> Model -> Model) -> Model -> Model
 updateIfValidElem fun model =
@@ -166,14 +159,11 @@ treeFromList list =
 
 subscriptions : Model -> Sub Msg
 subscriptions { autorun } =
-    Sub.batch
-        [ if autorun then
-            Time.every 1000 (always Step)
+    if autorun then
+        Time.every 1000 (always Step)
 
-          else
-            Sub.none
-        , Ports.size Size
-        ]
+    else
+        Sub.none
 
 
 
@@ -211,15 +201,6 @@ menuView model =
 
 initView : Model -> Element Msg
 initView model =
-    let
-        buttonEnabled =
-            List.isEmpty model.steps
-
-        resetButton toMsg title =
-            button
-                [ type_ "button", onClick toMsg, disabled <| not buttonEnabled, class "dropdown-item" ]
-                [ text title ]
-    in
     Element.column
         [ Element.alignTop
         , Element.width (Element.fillPortion 3)

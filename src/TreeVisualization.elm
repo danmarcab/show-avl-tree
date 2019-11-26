@@ -5,8 +5,8 @@ import Html exposing (Html)
 import StepByStepAVLTree exposing (Step(..))
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text, text_)
 import Svg.Attributes exposing (..)
+import SvgTreeDiagram
 import TreeDiagram exposing (defaultTreeLayout)
-import TreeDiagram.Svg
 
 
 view : ( Int, Int ) -> Maybe (Step Int Int) -> Tree Int Int -> Html msg
@@ -15,15 +15,7 @@ view ( w, h ) maybeStep tree =
         vBox =
             "0 0 " ++ String.fromInt w ++ " " ++ String.fromInt h
     in
-    Svg.svg
-        [ width "100%"
-        , height "600"
-        , viewBox vBox
-        , preserveAspectRatio "xMidYMid meet"
-        , class "show-avl-tree-wrapper"
-        ]
-        [ TreeDiagram.Svg.draw treeLayout drawNode (drawEdge "black") <| toTree maybeStep tree
-        ]
+    SvgTreeDiagram.draw treeLayout drawNode (drawEdge "black") <| toTree maybeStep tree
 
 
 treeLayout =

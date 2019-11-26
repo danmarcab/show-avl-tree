@@ -1,10 +1,9 @@
-  <!doctype html>
+<!doctype html>
 
-  <body>
-    <div></div>
-    <script src="ShowAvlTree.js"></script>
-    <script>
-        var app = ShowAvlTree.appModule.init({node: document.querySelector("div")});
-        ShowAvlTree.configurePorts(app);
-    </script>
-  </body>
+<body>
+<div></div>
+<script src="ShowAvlTree.js"></script>
+<script>
+    ShowAvlTree.init({node: document.querySelector("div"), flags: {}});
+</script>
+</body>
